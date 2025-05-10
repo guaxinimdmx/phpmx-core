@@ -1,0 +1,11 @@
+{
+  "name": "phpmx/core",
+  "description": "Base para desenvolvimento de aplicações modernas em PHP",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "André Ricardo",
+      "email": "contatoadmx@gmail.com"
+    }
+  ]
+}
