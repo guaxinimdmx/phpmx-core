@@ -1,25 +1,28 @@
 {
-    "name": "phpmx/core",
-    "description": "Base para desenvolvimento de aplicações modernas em PHP",
-    "license": "MIT",
-    "authors": [
-        {
-            "name": "André Ricardo",
-            "email": "contatoadmx@gmail.com"
-        }
-    ],
-    "autoload": {
-        "psr-4": {
-            "": "source/"
-        },
-        "files": [
-            "helper/constant/char_normalizer.php",
-            "helper/function/dbug.php",
-            "helper/function/env.php",
-            "helper/function/is.php",
-            "helper/function/path.php",
-            "helper/function/remove_accents.php",
-            "helper/function/str.php"
-        ]
+  "name": "phpmx/core",
+  "description": "Base para desenvolvimento de aplicações modernas em PHP",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "André Ricardo",
+      "email": "contatoadmx@gmail.com"
     }
+  ],
+  "autoload": {
+    "psr-4": {
+      "": "source/"
+    },
+    "files": [
+      "helper/constant/char_normalizer.php",
+      "helper/function/dbug.php",
+      "helper/function/env.php",
+      "helper/function/is.php",
+      "helper/function/path.php",
+      "helper/function/remove_accents.php",
+      "helper/function/str.php"
+    ]
+  },
+  "scripts": {
+    "mx-install": "php vendor/phpmx/core/install"
+  }
 }
