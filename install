@@ -1,5 +1,6 @@
 <?php
 
-copy(__DIR__ . '/mx', getcwd() . '/mx');
+if (!file_exists('./mx'))
+  copy(__DIR__ . '/mx', './mx');
 
 echo shell_exec("php mx install");

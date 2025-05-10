@@ -2,6 +2,7 @@
 
 use PhpMx\Dir;
 use PhpMx\File;
+use PhpMx\Path;
 use PhpMx\Terminal;
 
 return new class extends Terminal {
@@ -21,7 +22,8 @@ return new class extends Terminal {
     Dir::create('storage/certificate');
     Dir::create('terminal');
 
-    File::copy('index.php', 'index.php');
+    if (!File::check('index.php'))
+      File::copy(Path::seekFile('index.php'), 'index.php');
 
     Terminal::run('composer');
   }
