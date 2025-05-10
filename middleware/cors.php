@@ -6,7 +6,7 @@ return new class {
 
     function __invoke(Closure $next)
     {
-        Response::header('Mx-Cros', 'true');
+        Response::header('Mx-Cors', 'true');
 
         Response::header('Access-Control-Allow-Origin', '*');
         Response::header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
