@@ -27,7 +27,9 @@ abstract class Terminal
             $commandFile = Path::format('terminal', ...$commandFile);
             $commandFile = File::setEx($commandFile, 'php');
 
-            if (!File::check($commandFile))
+            $commandFile = Path::seekFile($commandFile);
+
+            if (!$commandFile)
                 throw new Error("Command [$command] not fond");
 
             $action = Import::return($commandFile);

@@ -1,0 +1,5 @@
+<?php
+
+copy(__DIR__ . '/mx', getcwd() . '/mx');
+
+echo shell_exec("php mx install");
