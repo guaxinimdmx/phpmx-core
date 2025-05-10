@@ -19,6 +19,7 @@ return new class extends Terminal {
     Dir::create('source');
     Dir::create('storage');
     Dir::create('storage/assets');
+    Dir::create('storage/assets/download');
     Dir::create('storage/certificate');
     Dir::create('terminal');
 

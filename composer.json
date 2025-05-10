@@ -1,32 +1,41 @@
 {
-    "name": "phpmx/core",
-    "description": "Base para desenvolvimento de aplicações modernas em PHP",
-    "license": "MIT",
-    "authors": [
-        {
-            "name": "André Ricardo",
-            "email": "contatoadmx@gmail.com"
-        }
-    ],
-    "autoload": {
-        "psr-4": {
-            "": "source/"
-        },
-        "files": [
-            "helper/constant/char_normalizer.php",
-            "helper/constant/http_status.php",
-            "helper/constant/request_is.php",
-            "helper/function/dbug.php",
-            "helper/function/env.php",
-            "helper/function/is.php",
-            "helper/function/num.php",
-            "helper/function/path.php",
-            "helper/function/prepare.php",
-            "helper/function/remove_accents.php",
-            "helper/function/str.php",
-            "helper/function/uuid.php",
-            "helper/script/env.php",
-            "helper/script/error.php"
-        ]
+  "name": "phpmx/core",
+  "description": "Base para desenvolvimento de aplicações modernas em PHP",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "André Ricardo",
+      "email": "contatoadmx@gmail.com"
     }
+  ],
+  "autoload": {
+    "psr-4": {
+      "": "source/"
+    },
+    "files": [
+      "helper/constant/char_normalizer.php",
+      "helper/constant/http_status.php",
+      "helper/constant/request_is.php",
+      "helper/function/dbug.php",
+      "helper/function/env.php",
+      "helper/function/is.php",
+      "helper/function/num.php",
+      "helper/function/path.php",
+      "helper/function/prepare.php",
+      "helper/function/remove_accents.php",
+      "helper/function/str.php",
+      "helper/function/uuid.php",
+      "helper/script/env.php",
+      "helper/script/error.php"
+    ]
+  },
+  "require": {
+    "php": "^8.3",
+    "ext-gd": "*",
+    "ext-exif": "*",
+    "ext-mbstring": "*",
+    "ext-fileinfo": "*",
+    "ext-pdo_mysql": "*",
+    "ext-pdo_sqlite": "*"
+  }
 }
