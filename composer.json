@@ -21,8 +21,5 @@
       "helper/function/remove_accents.php",
       "helper/function/str.php"
     ]
-  },
-  "scripts": {
-    "mx-install": "php vendor/phpmx/core/install"
   }
 }

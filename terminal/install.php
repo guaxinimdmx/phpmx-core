@@ -1,8 +1,9 @@
 <?php
 
 use PhpMx\Dir;
+use PhpMx\Terminal;
 
-return new class extends \PhpMx\Terminal {
+return new class extends Terminal {
 
   function __invoke()
   {
@@ -16,5 +17,7 @@ return new class extends \PhpMx\Terminal {
     Dir::create('storage/assets');
     Dir::create('storage/certificate');
     Dir::create('terminal');
+
+    Terminal::run('composer');
   }
 };

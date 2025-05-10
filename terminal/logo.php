@@ -1,6 +1,8 @@
 <?php
 
-return new class extends \PhpMx\Terminal {
+use PhpMx\Terminal;
+
+return new class extends Terminal {
 
     function __invoke()
     {

@@ -2,8 +2,9 @@
 
 use PhpMx\Dir;
 use PhpMx\Json;
+use PhpMx\Terminal;
 
-return new class extends \PhpMx\Terminal {
+return new class extends Terminal {
 
     function __invoke()
     {
