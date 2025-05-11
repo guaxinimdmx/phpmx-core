@@ -17,10 +17,10 @@ return new class extends Terminal {
     Dir::create('migration');
     Dir::create('routes');
     Dir::create('source');
+    Dir::create('source/Controller');
     Dir::create('storage');
     Dir::create('storage/assets');
-    Dir::create('storage/assets/download');
-    Dir::create('storage/certificate');
+    Dir::create('storage/download');
     Dir::create('terminal');
 
     if (!File::check('index.php'))
