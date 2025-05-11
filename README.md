@@ -26,3 +26,9 @@ Framework minimalista para back-ends modernos em PHP, sem dependências externas
 Para ver o servidor rodando
 
     php mx server
+
+---
+
+## 📚 Ainda em construção
+
+A documentação completa será publicada futuramente. Por enquanto, o código é totalmente legível, funcional e comentado.
