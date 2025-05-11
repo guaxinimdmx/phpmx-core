@@ -1,2 +1,9 @@
 /vendor
 /composer.lock
+
+/migration
+
+/source/Model
+
+/storage/Scheme
+/storage/Sqlite
