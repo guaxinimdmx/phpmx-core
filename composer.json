@@ -16,6 +16,7 @@
             "helper/constant/char_normalizer.php",
             "helper/constant/http_status.php",
             "helper/constant/request_is.php",
+            "helper/function/changes.php",
             "helper/function/dbug.php",
             "helper/function/env.php",
             "helper/function/http_status.php",
