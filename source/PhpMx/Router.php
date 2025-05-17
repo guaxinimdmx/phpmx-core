@@ -4,44 +4,81 @@ namespace PhpMx;
 
 use Closure;
 use Exception;
-use PhpMx\Router\RouterOverload;
 use ReflectionMethod;
 
-/**
- * @method static void get(string $route, string $response) Adiciona uma rota para interpretação em chamadas do tipo GET
- * @method static void get(string $route, string $response, array $middlewares) Adiciona uma rota para interpretação em chamadas do tipo GET
- * @method static void get(string $response) Adiciona uma rota para interpretação em chamadas do tipo GET
- * @method static void get(string $response, array $middlewares) Adiciona uma rota para interpretação em chamadas do tipo GET
- *
- * @method static void post(string $route, string $response) Adiciona uma rota para interpretação em chamadas do tipo POST
- * @method static void post(string $route, string $response, array $middlewares) Adiciona uma rota para interpretação em chamadas do tipo POST
- * @method static void post(string $response) Adiciona uma rota para interpretação em chamadas do tipo POST
- * @method static void post(string $response, array $middlewares) Adiciona uma rota para interpretação em chamadas do tipo POST
- *
- * @method static void put(string $route, string $response) Adiciona uma rota para interpretação em chamadas do tipo PUT
- * @method static void put(string $route, string $response, array $middlewares) Adiciona uma rota para interpretação em chamadas do tipo PUT
- * @method static void put(string $response) Adiciona uma rota para interpretação em chamadas do tipo PUT
- * @method static void put(string $response, array $middlewares) Adiciona uma rota para interpretação em chamadas do tipo PUT
- *
- * @method static void delete(string $route, string $response) Adiciona uma rota para interpretação em chamadas do tipo DELETE
- * @method static void delete(string $route, string $response, array $middlewares) Adiciona uma rota para interpretação em chamadas do tipo DELETE
- * @method static void delete(string $response) Adiciona uma rota para interpretação em chamadas do tipo DELETE
- * @method static void delete(string $response, array $middlewares) Adiciona uma rota para interpretação em chamadas do tipo DELETE
- *
- * @method static void group(string $path, Closure $action) Adiciona path para um grupo de rotas
- * @method static void group(array $middlewares, Closure $action) Adiciona middleware para um grupo de rotas
- * @method static void group(string $path, array $middlewares, Closure $action) Adiciona path e middleware para um grupo de rotas
- * @method static void group(string $path, string $namespace, Closure $action) Adiciona path e namespace para um grupo de rotas
- * @method static void group(string $path, string $namespace, array $middlewares, Closure $action) Adiciona path, namespace e middleware para um grupo de rotas
- */
+
 abstract class Router
 {
-    use RouterOverload;
-
     protected static array $ROUTE = [];
     protected static array $MIDDLEWARES = [[]];
     protected static array $NAMESPACE = [];
     protected static array $PATH = [];
+
+    /** Adiciona uma rota para responder por requisições GET */
+    static function get(string $route, string $response, array $middlewares = []): void
+    {
+        if (IS_GET) self::defineRoute($route, $response, $middlewares);
+    }
+
+    /** Adiciona uma rota para responder por requisições POST */
+    static function post(string $route, string $response, array $middlewares = []): void
+    {
+        if (IS_POST) self::defineRoute($route, $response, $middlewares);
+    }
+
+    /** Adiciona uma rota para responder por requisições PUT */
+    static function put(string $route, string $response, array $middlewares = []): void
+    {
+        if (IS_PUT) self::defineRoute($route, $response, $middlewares);
+    }
+
+    /** Adiciona uma rota para responder por requisições DELETE */
+    static function delete(string $route, string $response, array $middlewares = []): void
+    {
+        if (IS_DELETE) self::defineRoute($route, $response, $middlewares);
+    }
+
+    /** Adiciona um caminho padrão para um conjunto de rotas */
+    static function path(string $path, Closure $wrapper): void
+    {
+        list($template) = self::parseRouteTemplate("$path...");
+        $template = implode("/", [...self::$PATH, $template]);
+        if (self::checkRouteMatch($template)) {
+            self::$PATH[] = $path;
+            $wrapper();
+            array_pop(self::$PATH);
+        }
+    }
+
+    /** Adiciona um namespace padrão para um conjunto de rotas */
+    static function namespace(string $namespace, Closure $wrapper): void
+    {
+        $namespace = trim($namespace, '.');
+        if (!is_blank($namespace)) {
+            self::$NAMESPACE[] = $namespace;
+            $wrapper();
+            array_pop(self::$NAMESPACE);
+        }
+    }
+
+    /** Adiciona um middlewares padrão para um conjunto de rotas */
+    static function middleware(array $middlewares, Closure $wrapper): void
+    {
+        if (!empty($middlewares)) {
+            self::$MIDDLEWARES[] = [...end(self::$MIDDLEWARES), ...$middlewares];
+            $wrapper();
+            array_pop(self::$MIDDLEWARES);
+        }
+    }
+
+    /** Adiciona caminho e middlewares para um conjunto de rotas */
+    static function group(string $path, string $namespace, array $middlewares, Closure $wrapper): void
+    {
+        $wrapper = fn() => self::namespace($namespace, $wrapper);
+        $wrapper = fn() => self::middleware($middlewares, $wrapper);
+        $wrapper = fn() => self::path($path, $wrapper);
+        $wrapper();
+    }
 
     /** Resolve a requisição atual enviando a reposta ao cliente */
     static function solve(array $globalMiddlewares = [])
@@ -58,17 +95,36 @@ abstract class Router
         if ($routeMatch) {
             list($template, $response, $params, $middlewares) = $routeMatch;
             self::setRequestRouteParams($template, $params);
-            $action = fn() => self::executeActionResponse($response, Request::data());
+            $wrapper = fn() => self::executeActionResponse($response, Request::data());
             $middlewares = [...$globalMiddlewares, ...$middlewares];
         } else {
-            $action = fn() => throw new Exception('Route not found', STS_NOT_FOUND);
+            $wrapper = fn() => throw new Exception('Route not found', STS_NOT_FOUND);
             $middlewares = $globalMiddlewares;
         }
 
-        $response = Middleware::run($middlewares, $action);
+        $response = Middleware::run($middlewares, $wrapper);
 
         Response::content($response);
         Response::send();
+    }
+
+    /** Adiciona uma rota para interpretação */
+    protected static function defineRoute(string $route, string $response, array $middlewares = []): void
+    {
+        $route = implode('/', [...self::$PATH, $route]);
+
+        if (is_string($response)) $response = implode('.', [...self::$NAMESPACE, $response]);
+
+        list($template, $params) = self::parseRouteTemplate($route);
+
+        $middlewares = [...end(self::$MIDDLEWARES), ...$middlewares];
+
+        self::$ROUTE[$template] = [
+            $template,
+            $response,
+            $params,
+            $middlewares
+        ];
     }
 
     /** Explode uma rota em [template,params] */
@@ -81,15 +137,10 @@ abstract class Router
         foreach ($route as $pos => $param) {
             if (str_starts_with($param, '[')) {
                 $param = trim($param, '[]');
-                $type = substr($param, 0, 1);
-                if (in_array($type, ['!', '#', '$', '@'])) {
-                    $param = substr($param, 1);
-                } else {
-                    $type = '@';
-                }
+                if (str_starts_with($param, '#')) $param = substr($param, 1);
                 if (empty($param)) $param = null;
                 $params[$pos] = $param;
-                $route[$pos] = $type;
+                $route[$pos] = '#';
             }
         }
 
@@ -131,24 +182,12 @@ abstract class Router
         $template = trim($template, '/');
         $template = explode('/', $template);
 
-
         while (count($template)) {
             $expected = array_shift($template);
             $received = array_shift($uri) ?? '';
-
             if ($expected === '...') return true;
-
             if (is_blank($received) && !is_blank($expected)) return false;
-
-            if ($expected === '!') {
-                if (!is_numeric($received) || intval($received) != $received) return false;
-            } elseif ($expected === '#') {
-                if (!is_idKey($received)) return false;
-            } elseif ($expected === '$') {
-                if (!Cif::check($received)) return false;
-            } elseif ($expected !== '@' && $received !== $expected) {
-                return false;
-            }
+            if ($expected !== '#' && $received !== $expected) return false;
         }
 
         return count($uri) === 0;
@@ -169,7 +208,7 @@ abstract class Router
             $nb = '';
             $max = max(count($arrayA), count($arrayB));
 
-            $dynamicParamWeight  =  ['!' => '1',  '#' => '2',  '$' => '3',  '@' => '4',  '...' => '5'];
+            $dynamicParamWeight  =  ['#' => '1',  '...' => '2'];
             for ($i = 0; $i < $max; $i++) {
                 $aVal = $arrayA[$i] ?? '';
                 $bVal = $arrayB[$i] ?? '';
@@ -267,69 +306,5 @@ abstract class Router
         }
 
         return $response->{$method}(...$params) ?? null;
-    }
-
-    /** Adiciona uma rota para interpretação */
-    protected static function defineRoute(string $route, string|int $response, array $middlewares): void
-    {
-        $route = implode('/', [...self::$PATH, $route]);
-
-        if (is_string($response)) $response = implode('.', [...self::$NAMESPACE, $response]);
-
-        list($template, $params) = self::parseRouteTemplate($route);
-
-        $middlewares = [...end(self::$MIDDLEWARES), ...$middlewares];
-
-        self::$ROUTE[$template] = [
-            $template,
-            $response,
-            $params,
-            $middlewares
-        ];
-    }
-
-    /** Adiciona caminho, namespace e middlewares para um conjunto de rotas */
-    protected static function defineGroup(?string $path, ?string $namespace, ?array $middlewares, Closure $action): void
-    {
-        $wrapper = $action;
-
-        if ($namespace) $wrapper = fn() => self::defineCommonNamespace($namespace, $wrapper);
-        if ($middlewares) $wrapper = fn() => self::defineCommonMiddleware($middlewares, $wrapper);
-        if ($path) $wrapper = fn() => self::defineCommonPath($path, $wrapper);
-
-        $wrapper();
-    }
-
-    /** Adiciona um caminho padrão para um conjunto de rotas */
-    protected static function defineCommonPath(string $path, Closure $action): void
-    {
-        list($template) = self::parseRouteTemplate("$path...");
-        $template = implode("/", [...self::$PATH, $template]);
-        if (self::checkRouteMatch($template)) {
-            self::$PATH[] = $path;
-            $action();
-            array_pop(self::$PATH);
-        }
-    }
-
-    /** Adiciona um namespace padrão para um conjunto de rotas */
-    protected static function defineCommonNamespace(string $namespace, Closure $action): void
-    {
-        $namespace = trim($namespace, '.');
-        if (!is_blank($namespace)) {
-            self::$NAMESPACE[] = $namespace;
-            $action();
-            array_pop(self::$NAMESPACE);
-        }
-    }
-
-    /** Adiciona um middlewares padrão para um conjunto de rotas */
-    protected static function defineCommonMiddleware(array $middlewares, Closure $action): void
-    {
-        if (!empty($middlewares)) {
-            self::$MIDDLEWARES[] = [...end(self::$MIDDLEWARES), ...$middlewares];
-            $action();
-            array_pop(self::$MIDDLEWARES);
-        }
     }
 }
