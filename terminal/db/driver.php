@@ -196,7 +196,7 @@ return new class extends Terminal {
                 if ($fieldMap['type'] == 'idx') {
                     $data['fieldNamespace'] = Datalayer::formatNameToDriverNamespace($fieldMap['config']['dbName']);
                     $data['fieldTableClass'] = Datalayer::formatNameToClass($fieldMap['config']['table']);
-                    $autocomplete[] = $this->template('datalayer/driver/record/autocomplete_dinamicId', $data);
+                    $autocomplete[] = $this->template('datalayer/driver/record/autocomplete_dynamicId', $data);
                 } else {
                     $autocomplete[] = $this->template('datalayer/driver/record/autocomplete', $data);
                 }
