@@ -160,7 +160,7 @@ abstract class Router
             $route = explode('...', $route);
             $route = array_shift($route);
             $route = trim($route, '/');
-            $route .= '...';
+            $route .= '/...';
         }
 
         return $route;
