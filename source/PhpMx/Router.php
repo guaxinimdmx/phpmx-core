@@ -47,11 +47,9 @@ abstract class Router
     /** Adiciona um grupo de rotas que serão declaradas apenas se o grupo for uma rota válida */
     static function group(string $group, array $middlewares, ?Closure $action = null): void
     {
-        list($template) = self::parseRouteTemplate($group);
-
+        list($template) = self::parseRouteTemplate("$group...");
         $template = implode("/", [...self::$GROUP, $template]);
-
-        if (self::checkRouteMatch("$template...")) {
+        if (self::checkRouteMatch($template)) {
             self::$GROUP[] = $group;
             self::middleware($middlewares, $action);
             array_pop(self::$GROUP);
@@ -109,18 +107,22 @@ abstract class Router
         $params = [];
         $route = self::normalizeRoute($route);
         $route = explode('/', $route);
-        foreach ($route as $pos => $param)
-            if (str_starts_with($param, '[#')) {
-                $route[$pos] = '#';
-                $param = substr($param, 2, -1);
-                if (strpos($param, ':')) {
-                    $route[$pos] = substr($param, strpos($param, ':') + 1);
-                    $param = substr($param, 0, strpos($param, ':'));
+
+        foreach ($route as $pos => $param) {
+            if (str_starts_with($param, '[')) {
+                $param = trim($param, '[]');
+                $type = substr($param, 0, 1);
+                if (in_array($type, ['!', '#', '$', '@'])) {
+                    $param = substr($param, 1);
+                } else {
+                    $type = '@';
                 }
-                if (empty($param))
-                    $param = null;
+                if (empty($param)) $param = null;
                 $params[$pos] = $param;
+                $route[$pos] = $type;
             }
+        }
+
         $route = implode('/', $route);
         return [$route, $params];
     }
@@ -128,26 +130,15 @@ abstract class Router
     /** Limpa uma string para ser utilziada como rota */
     protected static function normalizeRoute(string $route): string
     {
-        if (strpos($route, '?') !== false) {
-            $paramsQuery = explode('?', $route);
-            $route = array_shift($paramsQuery);
-            $paramsQuery = implode('&', $paramsQuery);
-            $paramsQuery = explode('&', $paramsQuery);
-            asort($paramsQuery);
-        }
-
-        $route = trim($route, '/');
-
+        $route = explode('/', $route);
+        $route = array_filter($route, fn($v) => trim($v) != '');
+        $route = implode('/', $route);
         $route .= '/';
 
-        $route = str_replace(['[...]', '['], ['...', '[#'], $route);
-        $route = str_replace(['[##', '[#='], ['[#', '[='], $route);
-
-        $route = str_replace_all(['...', '.../', '......'], '/...', $route);
-        $route = str_replace_all([' /', '//', '/ '], '/', $route);
-
-        if ($paramsQuery ?? false)
-            $route .= "?" . implode('?', $paramsQuery);
+        if (strpos($route, '...') !== false) {
+            $route = explode('...', $route);
+            $route = array_shift($route) . '...';
+        }
 
         return $route;
     }
@@ -161,6 +152,36 @@ abstract class Router
                 return $route;
 
         return null;
+    }
+    /** Verifica se um template combina com a URL atual */
+    protected static function checkRouteMatch(string $template): bool
+    {
+        $uri = Request::path();
+
+        $template = trim($template, '/');
+        $template = explode('/', $template);
+
+
+        while (count($template)) {
+            $expected = array_shift($template);
+            $received = array_shift($uri) ?? '';
+
+            if ($expected === '...') return true;
+
+            if (is_blank($received) && !is_blank($expected)) return false;
+
+            if ($expected === '!') {
+                if (!is_numeric($received) || intval($received) != $received) return false;
+            } elseif ($expected === '#') {
+                if (!is_idKey($received)) return false;
+            } elseif ($expected === '$') {
+                if (!Cif::check($received)) return false;
+            } elseif ($expected !== '@' && $received !== $expected) {
+                return false;
+            }
+        }
+
+        return count($uri) === 0;
     }
 
     /** Organiza um array de rotas preparando para a interpretação */
@@ -178,80 +199,25 @@ abstract class Router
             $nb = '';
             $max = max(count($arrayA), count($arrayB));
 
+            $dynamicParamWeight  =  ['!' => '1',  '#' => '2',  '$' => '3',  '@' => '4',  '...' => '5'];
             for ($i = 0; $i < $max; $i++) {
-                $na .= match (true) {
-                    (($arrayA[$i] ?? '#') == '#') => '1',
-                    (($arrayA[$i] ?? '') == '...') => '2',
-                    default => '0'
-                };
-                $nb .= match (true) {
-                    (($arrayB[$i] ?? '#') == '#') => '1',
-                    (($arrayB[$i] ?? '') == '...') => '2',
-                    default => '0'
-                };
+                $aVal = $arrayA[$i] ?? '';
+                $bVal = $arrayB[$i] ?? '';
+                $na .= $dynamicParamWeight[$aVal] ?? '0';
+                $nb .= $dynamicParamWeight[$bVal] ?? '0';
             }
 
             $result = intval($na) <=> intval($nb);
-
             if ($result) return $result;
 
             $result = count($arrayA) <=> count($arrayB);
-
             if ($result) return $result * -1;
 
             $result = strlen($a) <=> strlen($b);
-
             if ($result) return $result * -1;
         });
+
         return $array;
-    }
-
-    /** Verifica se um template combina com a URL atual */
-    protected static function checkRouteMatch(string $template): bool
-    {
-        $template = self::normalizeRoute($template);
-
-        list($template) = self::parseRouteTemplate($template);
-
-        $uri = Request::path();
-
-        $template = trim($template, '/');
-
-        if (strpos($template, '?') !== false) {
-            $paramsQuery = explode('?', $template);
-            $template = array_shift($paramsQuery);
-            foreach ($paramsQuery as $param)
-                if (is_null(Request::query($param)))
-                    return false;
-        }
-
-        $template = explode('/', $template);
-
-        while (count($template)) {
-            $esperado = array_shift($template);
-
-            $recebido = array_shift($uri) ?? '';
-
-            if ($recebido != $esperado) {
-
-                if (is_blank($recebido)) return $esperado == '...';
-
-                if ($esperado == '@') {
-                    if (!is_numeric($recebido) || intval($recebido) != $recebido)
-                        return false;
-                } else if ($esperado != '#' && $esperado != '...') {
-                    return false;
-                }
-            }
-
-            if ($esperado == '...' && count($uri))
-                $template[] = '...';
-        }
-
-        if (count($uri) != count($template))
-            return false;
-
-        return true;
     }
 
     /** Define os parametros da rota dentro do objeto de requisição */
