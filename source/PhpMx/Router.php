@@ -158,7 +158,9 @@ abstract class Router
 
         if (strpos($route, '...') !== false) {
             $route = explode('...', $route);
-            $route = array_shift($route) . '...';
+            $route = array_shift($route);
+            $route = trim($route, '/');
+            $route .= '...';
         }
 
         return $route;
