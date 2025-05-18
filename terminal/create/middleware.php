@@ -10,10 +10,8 @@ return new class extends Terminal {
     function __invoke($middleware)
     {
         $middleware = remove_accents($middleware);
-        $middleware = strtolower($middleware);
 
         $middlewareFile = explode('.', $middleware);
-        $middlewareFile = array_map(fn($v) => strtolower($v), $middlewareFile);
         $middlewareFile = path('middleware', ...$middlewareFile);
         $middlewareFile = File::setEx($middlewareFile, 'php');
 

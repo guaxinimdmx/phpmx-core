@@ -40,7 +40,6 @@ abstract class Middleware
 
             $action = remove_accents($middleware);
             $action = explode('.', $action);
-            $action = array_map(fn($v) => strtolower($v), $action);
 
             $actionFile = path(...$action);
             $actionFile = File::setEx($actionFile, 'php');
