@@ -11,7 +11,6 @@ abstract class Router
 {
     protected static array $ROUTE = [];
     protected static array $MIDDLEWARES = [[]];
-    protected static array $NAMESPACE = [];
     protected static array $PATH = [];
 
     /** Adiciona uma rota para responder por requisições GET */
@@ -50,31 +49,17 @@ abstract class Router
         }
     }
 
-    /** Adiciona um namespace padrão para um conjunto de rotas */
-    static function namespace(string $namespace, Closure $wrapper): void
-    {
-        $namespace = trim($namespace, '.');
-        if (!is_blank($namespace)) {
-            self::$NAMESPACE[] = $namespace;
-            $wrapper();
-            array_pop(self::$NAMESPACE);
-        }
-    }
-
     /** Adiciona um middlewares padrão para um conjunto de rotas */
     static function middleware(array $middlewares, Closure $wrapper): void
     {
-        if (!empty($middlewares)) {
-            self::$MIDDLEWARES[] = [...end(self::$MIDDLEWARES), ...$middlewares];
-            $wrapper();
-            array_pop(self::$MIDDLEWARES);
-        }
+        self::$MIDDLEWARES[] = [...end(self::$MIDDLEWARES), ...$middlewares];
+        $wrapper();
+        array_pop(self::$MIDDLEWARES);
     }
 
     /** Adiciona caminho e middlewares para um conjunto de rotas */
-    static function group(string $path, string $namespace, array $middlewares, Closure $wrapper): void
+    static function group(string $path, array $middlewares, Closure $wrapper): void
     {
-        $wrapper = fn() => self::namespace($namespace, $wrapper);
         $wrapper = fn() => self::middleware($middlewares, $wrapper);
         $wrapper = fn() => self::path($path, $wrapper);
         $wrapper();
@@ -112,8 +97,6 @@ abstract class Router
     protected static function defineRoute(string $route, string $response, array $middlewares = []): void
     {
         $route = implode('/', [...self::$PATH, $route]);
-
-        if (is_string($response)) $response = implode('.', [...self::$NAMESPACE, $response]);
 
         list($template, $params) = self::parseRouteTemplate($route);
 
